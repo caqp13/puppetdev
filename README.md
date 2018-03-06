@@ -1,1 +1,2 @@
 # puppetdev
+pluralsite trainning
