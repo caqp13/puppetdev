@@ -1,0 +1,195 @@
+
+- Requirements:
+  - git repo
+  - vagrant
+  - virtualbox
+
+
+
+After the point we have created our git repo, we are ready to go through out first git branch and create our environment which it is required for this course.
+
+
+let's start with creating a new branch for this specific chapter, rather than using master, it is recommended at a given workflow available, create a branch, push out your changes to git repo,
+create a new PR to be approved and finally to get the changes into the branch merged into master repo. you can also roll back your changes whether it is needed or pushing a new bunch of codes to
+be merged into the master repo.
+
+# git checkout -b bootstrapping_with_vagrant
+
+# mkdir vagrant
+
+# cd vagrant
+
+# vi Vagrantfile
+
+************************************************************
+
+Vagrant.configure(2) do |config|
+
+  config.vm.define "puppet" do|puppet|
+    puppet.vm.box = "centos/7"
+  end
+
+  config.vm.define "agent1" do |agent1|
+    agent1.vm.box = "centos/7"
+  end
+
+  config.vm.define "agent2" do |agent2|
+    agent2.vm.box = "ARTACK/debian-jessie"
+  end
+end
+
+*************************************
+
+It's clear we are just creating a simple example, but it is enough for this stage we are into now.
+
+- case you get some usb issues, and vagrant suggests you to disable, please following the instructions below:
+
+*********************************************************
+edit vagrant file
+
+config.vm.provider "virtualbox" do |vb|
+  vb.customize ["modifyvm", :id "--usb", "off"]
+  vb.customize ["modifyvm", :id "--usbehci", "off"]
+end
+
+********************************************
+
+There will be a point when your VMs are up and running, but the network is not set, and you might want to fix that bit up by defining the IPs at Vagrantfile.
+
+However, in order to do that you need to install vagrant-hostmanager plugin prior starting to use that feature in Vagrantfile.
+
+# vagrant plugin install vagrant-hostmanager
+
+
+# vi Vagrantfile
+
+
+1- Lets start by giving puppet server a name. Fully Qualified name. And define a network for this box folowed by the hostname. then you define a aliases.
+2- do the same for agent1 and agent2
+3- enable the following:
+  - hostmanager enabled=true
+  - ignore_private_ips = false
+  - include_offline = true (a specific vagrant machine is not up and you still want to add that to the host files and keep it to allow the machines to communicate to it whenever it does back up )
+
+
+
+*************************************************
+Vagrant.configure(2) do |config|
+
+  config.hostmanager.enabled = true
+  config.hostmanager.ignore_private_ips = false
+  config.hostmanager.include_offline = true
+
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.vm.customize ["modifyvm", :id "usb", "false"]
+    vb.vm.customize ["modifyvm" :id "usbehci", "false"]
+  end
+
+  config.vm.define "puppet" do |puppet|
+    puppet.vm.hostname = "puppet.example.com"
+    puppet.vm.network :private_network, ip: "10.0.0.10"
+    puppet.hostmanager.aliases = %w(puppet)
+    puppet.vm.box = "centos/7"
+  end
+
+  config.vm.define "agent1" do |agent1|
+    agent1.vm.box = "centos/7"
+    agent1.vm.hostname = "agent1.example.com"
+    agent1.vm.network :private_network, ip: "10.0.0.11"
+    agent1.hostmanager.aliases = %w(agent1)
+  end
+
+  config.vm.define "agent2" do |agent2|
+    agent2.vm.box = "ARTACK/debian-jessie"
+    agent2.vm.hostname = "agent2.example.com"
+    agent2.vm.network :private_network, ip: "10.0.0.12"
+    agent2.hostmanager.aliases = %w(agent2)
+  end
+
+end
+
+
+*******************************************
+
+
+Provisioning with Vagrant:
+--------------------------
+
+Vagrant boxes now know about each other after the hostmanager is installed and set up. The vagrant boxes are not configured yet. We can sort that out automatically too.
+Vagrant has built-in support for provisioning assistant.
+
+It supports using multiple providers such as Bash, chef, ansible, puppet, CF, etc. We are gonna use shell provisioning in the example. i fell it is overkilled to use something else as it is
+pretty simple, at a given files we have to copy and packages we have to install on it
+
+Tasks we have to do:
+
+  - update and upgrade the server (no matters witch version of vagrant box you chose for your base image, there is almost all it is gonna be security patching and OS update available )
+  - gonna add puppet reposity
+  - install puppet itself
+  - configure puppet
+  - configure the jvm as puppet4 is running on jruby. by default is 2gb heap size and vagrant box has 512bm of RAM and increase the amount of RAM on our vagrant box
+for redhat distro is located at /etc/sysconfig/puppetserver for debian /etc/default/puppetserver
+So simple:
+
+We create a provision entry as a shell and copy the block of commands between inline: <<-SHELL and shell
+
+
+Vagrant.configure(2) do |config|
+
+  #1g RAm for all the vagrant boxes by default
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 1024
+  end
+
+  config.vm.define "puppet" do |puppet|
+    config.vm.provider "virtualbox" do |v|
+      v.memory = 2048
+    end
+    puppet.vm.box = "centos/7"
+    puppet.vm.hostname = "puppet.example.com"
+    puppet.vm.network :private_network, ip: "10.0.0.10"
+    puppet.hostmanager.aliases = %w(puppet)
+    puppet.vm.provision "shell", inline: <<-SHELL
+      sudo rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+      sudo yum update -y
+      sudo yum install puppetserver -y
+      sudo sed -i 's/2g/512m/g' /etc/systemconfig/puppetserver
+    SHELL
+  end
+end
+
+
+let's bring up the vagrant box and see what happened after these couple of changes.
+
+# vagrant halt puppet
+# vagrant up puppet
+
+#vagrant ssh puppet
+
+#systemctl start puppetserver.service
+
+====================================================================
+
+Configure puppet
+--------------------
+1- puppet and hiera config to repo
+2- Add auto-signing
+3- now uses /etc/puppetlabs
+
+
+puppet 4 filesystem structure
+
+/etc/puppetlabs-
+               |_code (modules, manifests and hieradata)
+               |_mcollective (Mcollective orchestration framework)
+               |_puppet (Agent, SSL, CA)
+               |_puppetserver (Server config)
+               |_pxp-agent (Puppet execution protocol agent) transfer files back and forward between the puppet agent and puppet Server
+
+
+Get your data available and updated once is changed in the local repo to the vagrant boxes by Installing Virtualbox guest aDDITIONS
+
+1- copy puppetserver and code folder to you vagrant folder mounted by default
+
+# cp -ar /etc/puppetlabs/{code,puppetserver}/* /vagrant
