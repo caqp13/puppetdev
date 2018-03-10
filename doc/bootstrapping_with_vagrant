@@ -59,7 +59,7 @@ There will be a point when your VMs are up and running, but the network is not s
 However, in order to do that you need to install vagrant-hostmanager plugin prior starting to use that feature in Vagrantfile.
 
 # vagrant plugin install vagrant-hostmanager
-
+# vagrant plugin install vagrant-vbguest
 
 # vi Vagrantfile
 
