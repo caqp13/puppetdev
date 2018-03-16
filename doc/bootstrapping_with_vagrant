@@ -193,3 +193,70 @@ Get your data available and updated once is changed in the local repo to the vag
 1- copy puppetserver and code folder to you vagrant folder mounted by default
 
 # cp -ar /etc/puppetlabs/{code,puppetserver}/* /vagrant
+
+
+#TROUBLESHOOT
+Vagrant by default has rsync on the type sync enabled. Please remove the following file:
+
+~/.vagrant.d/boxes/CENTOSblablabla/IDbox/Vagrantfile
+#END TROUBLESHOOT
+
+
+Next step is provisioning these 2 folders in Vagrantfile:
+
+-> remove the local directories that came with the installation
+-> create a sync folder to be mounted on the /puppet_code box end.
+-> create a symbolic link for these directories
+-> enable autosign
+
+
+It would look like that:
+
+Vagrant configure(2) do |config|
+
+  config.vm.define "puppet" do |puppet|
+    puppet.vm.provider "virtualbox" do |v|
+      v.memory = "2048"
+    end
+    puppet.vm.synced_folder "../code", "/puppet_code"
+    puppet.vm.synced_folder "../puppetserver" "/vagrant_puppetserver"
+    puppet.vm.box = "boxcutter/centos72"
+    puppet.vm.hostname = "puppet"
+    puppet.vm.network :private_network, ip: "10.0.20.10"
+    puppet.hostmanager.aliases = %w(puppet)
+    puppet.vm.provision "shell", inline: <<-SHELL
+      sudo yum update -y
+      sudo rpm -ivh CENTOSblablabla
+      ..
+      .. install _puppetserver
+      sudo rm -rf /etc/puppetlabs/code
+      sudo ln -s /vagrant_code /etc/puppetlabs/code
+      sudo rm -rf /etc/puppetlabs/puppetserver
+      sudo ln -s /vagrant_puppetserver /etc/puppetlabs/puppetserver
+      sudo sed -i 's/2g/512m/g' /etc/sysconfig/puppetserver
+      echo "example.com" | sudo tee /etc/puppetlabs/puppet/autosign.conf
+      sudo service puppetserver start
+    SHELL
+  end
+
+
+++++++++++++++++++++++++++++++++++++++++++
+Config puppet agent
+
+
+
+Vagrantfile
+
+Vagrant.Configure(2) do |config|
+
+  config.vm.define "agent1" do |agent1|
+    agent1.vm.hostname = "agent1"
+    agent1.vm.network :private_network, ip: "10.0.20.11"
+    agent1.hostmanager.aliases = %w(agent1)
+    agent1.vm.provision "shell", inline: <<-SHELL
+      sudo yum update -y
+      sudo rpm -ivh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+      sudo yum install puppet-agent -y
+      sudo systemctl start puppet.service
+    SHELL
+  end
