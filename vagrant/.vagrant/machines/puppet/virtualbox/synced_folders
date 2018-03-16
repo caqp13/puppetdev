@@ -1,1 +1,3 @@
+
 {"rsync":{},"virtualbox":{"/vagrant":{"guestpath":"/vagrant","hostpath":"/var/tmp/vagrant_folder","disabled":false,"__vagrantfile":true},"/vagrant_code":{"guestpath":"/vagrant_code","hostpath":"/data/plural/puppetdev/code","disabled":false,"__vagrantfile":true},"/vagrant_puppetserver":{"guestpath":"/vagrant_puppetserver","hostpath":"/data/plural/puppetdev/puppetserver","disabled":false,"__vagrantfile":true}}}
+
