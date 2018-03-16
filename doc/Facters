@@ -1,0 +1,40 @@
+Facters:
+
+- Puppet's cross-platform system profiling library
+- it discovers and reports per-nodes Facters
+- then it makes available in puppet manifest as variable
+
+
+- You have core facts:
+
+facter os.architecture
+facter os
+
+etc..
+a complete list of core facts can be found at:
+https://docs.puppet.com/facter/latest/core_facts.html
+
+
+Custom facts
+================================
+
+use information not available in Facters
+Custom facts can be added to Facters
+snippets of ruby code
+
+
+you can use the library $LOAD_PATH or the --custom-dir option or the FACTERLIB environment variable to load a custom facts
+
+IE.
+
+how $LOAD_PATH works (it will find any directory named facter and read them)
+
+#~/ruby/library
+- facter
+  - rackspace.rb
+  - system_load.rb
+  - users.rb
+
+
+Creating a custom facts
+=========================

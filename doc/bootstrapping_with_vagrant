@@ -243,8 +243,6 @@ Vagrant configure(2) do |config|
 ++++++++++++++++++++++++++++++++++++++++++
 Config puppet agent
 
-
-
 Vagrantfile
 
 Vagrant.Configure(2) do |config|
@@ -260,3 +258,5 @@ Vagrant.Configure(2) do |config|
       sudo systemctl start puppet.service
     SHELL
   end
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
